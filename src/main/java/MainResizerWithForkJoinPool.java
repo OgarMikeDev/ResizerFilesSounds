@@ -95,6 +95,7 @@ class ChangeQualitySound extends Thread {
 
     @Override
     public void run() {
+        //TODO Обработка исключений
         try {
             for (File currentFileSound : filesAllSounds) {
                 AudioInputStream originalAudioInputStream = AudioSystem.getAudioInputStream(currentFileSound);
