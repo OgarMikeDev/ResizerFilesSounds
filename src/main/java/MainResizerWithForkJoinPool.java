@@ -7,8 +7,6 @@ import javax.sound.sampled.AudioSystem;
 public class MainResizerWithForkJoinPool {
     private static final String pathToSrcFolder = "src/main/resources/data/src_folder_sound";
     private static final String pathToDstFolder = "src/main/resources/data/dst_folder_sound";
-    private static final int newWidth = 300;
-    private static final int THRESHOLD = 10; // Минимальный размер чанка для обработки
 
 public static void main(String[] args) {
     // Создаём папку для исходных файлов
@@ -53,11 +51,11 @@ public static void main(String[] args) {
     long start = System.currentTimeMillis();
     
     // Создаём и запускаем первый поток
-    ChangeQualitySound soundProcessor1 = new ChangeQualitySound(pathToDstFolder, newWidth, filesSounds1, start);
+    ChangeQualitySound soundProcessor1 = new ChangeQualitySound(pathToDstFolder, filesSounds1, start);
     soundProcessor1.start();
     
     // Создаём и запускаем второй поток
-    ChangeQualitySound soundProcessor2 = new ChangeQualitySound(pathToDstFolder, newWidth, filesSounds2, start);
+    ChangeQualitySound soundProcessor2 = new ChangeQualitySound(pathToDstFolder, filesSounds2, start);
     soundProcessor2.start();
     
     // Ожидаем завершения обоих потоков
@@ -89,7 +87,7 @@ class ChangeQualitySound extends Thread {
     File[] filesAllSounds;
     long start;
 
-    public ChangeQualitySound(String pathToDstFolder, int newWidth, File[] filesAllSounds, long start) {
+    public ChangeQualitySound(String pathToDstFolder, File[] filesAllSounds, long start) {
         this.pathToDstFolder = pathToDstFolder;
         this.filesAllSounds = filesAllSounds;
         this.start = start;
