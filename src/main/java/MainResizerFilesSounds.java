@@ -11,6 +11,7 @@ public class MainResizerFilesSounds {
     public static void main(String[] args) {
         // Создаём папку для исходных файлов
         File fileSrcFolder = new File(pathToSrcFolder);
+        System.out.println("Папка с аудиофайлами: " + fileSrcFolder);
 
         // Проверяем, существует ли папка с исходниками
         if (!fileSrcFolder.exists() || !fileSrcFolder.isDirectory()) {
@@ -24,6 +25,8 @@ public class MainResizerFilesSounds {
                         name.toLowerCase().endsWith(".aiff") ||
                         name.toLowerCase().endsWith(".au")
         );
+
+        System.out.println("Массив аудиофайлов: " + filesAllSounds);
 
         // Проверяем, есть ли файлы
         if (filesAllSounds == null || filesAllSounds.length == 0) {
@@ -43,6 +46,9 @@ public class MainResizerFilesSounds {
         // Первая половина файлов
         File[] filesSounds1 = new File[middle];
         System.arraycopy(filesAllSounds, 0, filesSounds1, 0, filesSounds1.length);
+        for (File fileIn1Part : filesSounds1) {
+            System.out.println("Название текущего файла: " + fileIn1Part.getName());
+        }
 
         // Вторая половина файлов
         File[] filesSounds2 = new File[filesAllSounds.length - middle];
