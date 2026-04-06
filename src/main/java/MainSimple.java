@@ -62,7 +62,14 @@ class ChangeQualitySounds extends Thread {
     @Override
     public void run() {
         try {
+            //TODO currentFileSound - сам файл в виде File(как закрытая книга на полке)
             for (File currentFileSound : filesPartSounds) {
+                /*
+                TODO
+                 originAudioInputStream - открытый поток данных из currentFileSound,
+                 чтобы можно было читать содержимое.
+                 (как открытая книга на полке, кот-ю можно читать)
+                 */
                 AudioInputStream originAudioInputStream = AudioSystem.getAudioInputStream(currentFileSound);
                 /*
                 TODO
@@ -116,6 +123,7 @@ class ChangeQualitySounds extends Thread {
 
                 /*
                 TODO
+                 newAudioInputStream - что сохраняем в конечном виде.
                  Преобразование(прореживание сэмплов).
                  Читает оригинальные сэмплы.;
                  Отбрасывает каждый второй(прореживание);
@@ -131,6 +139,7 @@ class ChangeQualitySounds extends Thread {
                  */
                 AudioInputStream newAudioInputStream = AudioSystem.getAudioInputStream(newAudioFormat, originAudioInputStream);
 
+                //TODO Куда сохранять
                 File newFileSound = new File(pathToDstFolder + "/" + currentFileSound.getName());
                 AudioSystem.write(newAudioInputStream, AudioFileFormat.Type.WAVE, newFileSound);
             }
