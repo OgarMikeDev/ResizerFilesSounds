@@ -4,146 +4,147 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import java.io.File;
 
+/*
+TODO
+ Main получает из src_folder аудио-файлы,
+ сохраняет их в массив всех аудиофайлов,
+ делит этот массив на 2 части,
+ в первой части первые 2 аудиофайла,
+ во второй части последние 2 аудиофайла,
+ передаёт обе части аудиофайлов
+ объекту класса ChangeQualityAudioFiles
+ */
 public class MainSimple {
-    private static final String pathToSrcFolder = "src/main/resources/data/src_folder_sound";
-    private static final String pathToDstFolder = "src/main/resources/data/dst_folder_sound";
-
+    private static final String pathToSrcFolder = "src/main/resources/data/src_folder";
+    private static final String pathToDstFolder = "src/main/resources/data/dst_folder";
     public static void main(String[] args) {
-        //TODO Создаём папку для исходных файлов
-        File fileSrcFolder = new File(pathToSrcFolder);
-        System.out.println("Папка с аудиофайлами: " + fileSrcFolder);
+        //TODO Создание папки для исходных аудиофайлов
+        File audioFileSrcFolder = new File(pathToSrcFolder);
+        //TODO Массив аудиофайлов
+        File[] allAudioFiles = audioFileSrcFolder.listFiles();
+        //TODO Разделение аудиофайлов на 2 части для 2-х потоков
+        int middle = allAudioFiles.length / 2;
+        //TODO Первая половина аудиофайлов
+        File[] firstPartAudioFiles = new File[middle];
+        //TODO Заполнение firstPartAudioFiles первой частью аудиофайлов
+        System.arraycopy(allAudioFiles, 0, firstPartAudioFiles, 0, firstPartAudioFiles.length);
+        ChangeQualityAudioFiles firstChangeQualityAudioFiles = new ChangeQualityAudioFiles(
+                firstPartAudioFiles, pathToDstFolder
+        );
+        new Thread(firstChangeQualityAudioFiles).start();
 
-        File[] filesAllSounds = fileSrcFolder.listFiles();
-        System.out.println("Массив аудиофайлов: " + filesAllSounds);
-
-        //TODO Разделяем файлы на 2 части для 2-х потоков
-        int middle = filesAllSounds.length / 2;
-
-        //TODO Первая половина файлов
-        File[] filesSounds1 = new File[middle];
-        System.arraycopy(filesAllSounds, 0, filesSounds1, 0, filesSounds1.length);
-        for (File fileIn1Part : filesSounds1) {
-            System.out.println("Название текущего файла: " + fileIn1Part.getName());
-        }
-
-        //TODO TODO Вторая половина файлов
-        File[] filesSounds2 = new File[filesAllSounds.length - filesSounds1.length];
-        System.arraycopy(filesAllSounds, middle, filesSounds2, 0, filesSounds2.length);
-
-        //TODO Создаём и запускаем 1-й поток
-        ChangeQualitySounds changeQualitySounds1 = new ChangeQualitySounds(pathToDstFolder, filesSounds1);
-        new Thread(changeQualitySounds1).start();
-
-        //TODO Создаём и запускаем 2-й поток
-        ChangeQualitySounds changeQualitySounds2 = new ChangeQualitySounds(pathToDstFolder, filesSounds2);
-        new Thread(changeQualitySounds2).start();
+        //TODO Вторая половина аудиофайлов
+        File[] secondPartAudioFiles = new File[allAudioFiles.length - firstPartAudioFiles.length];
+        //TODO Заполнение secondPartAudioFiles второй частью аудиофайлов
+        System.arraycopy(allAudioFiles, middle, secondPartAudioFiles, 0, secondPartAudioFiles.length);
+        ChangeQualityAudioFiles secondChangeQualityAudioFiles = new ChangeQualityAudioFiles(
+                secondPartAudioFiles,
+                pathToDstFolder
+        );
+        new Thread(secondChangeQualityAudioFiles).start();
     }
 }
 
 /*
 TODO
-    Сэмпл - измерение звука в определённый промежуток времени.
-    Программа убирает каждый второй сэмпл,
-    но время между оставшимися сэмплами увеличивает в 2.
-    Почему звук по длине не меняется:
-    длительность =
-    кол-во сэмплов(в исх-й мелодии 44_100, в новой 22_050) /
-    частоту дискретизации(в исх-й мелодии 44_100 Гц, в новой 22_050 Гц)
+  ChangeQualityAudioFiles принимает текущую часть аудиофайлов,
+  проходит по каждому из них,
+  копирует и преобразовывает(сжимает)
+  и сохраняет в dst_folder
  */
-class ChangeQualitySounds extends Thread {
+class ChangeQualityAudioFiles extends Thread {
+    private File[] partOriginalAudioFiles;
     private String pathToDstFolder;
-    private File[] filesPartSounds;
 
-    public ChangeQualitySounds(String pathToDstFolder, File[] filesPartSounds) {
+    public ChangeQualityAudioFiles(File[] partOriginalAudioFiles, String pathToDstFolder) {
+        this.partOriginalAudioFiles = partOriginalAudioFiles;
         this.pathToDstFolder = pathToDstFolder;
-        this.filesPartSounds = filesPartSounds;
     }
 
     @Override
     public void run() {
         try {
-            //TODO currentFileSound - сам файл в виде File(как закрытая книга на полке)
-            for (File currentFileSound : filesPartSounds) {
+            //TODO originalAudioFile - сам файл в виде File(как закрытая книга на полке)
+            for (File originalAudioFile : partOriginalAudioFiles) {
                 /*
                 TODO
-                 originAudioInputStream - открытый поток данных из currentFileSound,
-                 чтобы можно было читать содержимое.
-                 (как открытая книга на полке, кот-ю можно читать)
+                  originalAudioInputStream - открытый поток данных из originalAudioFile,
+                  чтобы можно было читать содержимое
+                  (как открытая книга на полке, кот-ю можно читать)
                  */
-                AudioInputStream originAudioInputStream = AudioSystem.getAudioInputStream(currentFileSound);
+                AudioInputStream originalAudioInputStream = AudioSystem.getAudioInputStream(originalAudioFile);
                 /*
                 TODO
                  Как часто нужно измерять звук(частота).
                  Сколько места занимает одно измерение(разрядность).
-                 Это для одного уха или для двух(каналы).
-                 originAudioFormat описывает,
-                 что измерять звук нужно 44_100 раз в секунду.
+                 Используется для одного или обоих ух(каналы).
+                 originalAudioFormat описывает,
+                 что измерять звук нужно определённое кол-во раз(44_100) в секунду
                  */
-                AudioFormat originAudioFormat = originAudioInputStream.getFormat();
-
+                AudioFormat originalAudioFormat =  originalAudioInputStream.getFormat();
                 /*
                 TODO
                  Новый формат с половинной частотой.
-                 За счёт newAudioFormat "новая" мелодия
+                 За счёт newAudioFormat "новый" аудиофайл
                  будет иметь размер в 2 раза меньше,
                  но длиться столько же по времени,
-                 сколько и исходная.
+                 сколько и исходный.
                  newAudioFormat описывает,
-                 что измерять звук нужно 22_050 раз в секунду.
+                 что измерять звук нужно в 2 раза меньше(22_050) раз в секунду
                  */
                 AudioFormat newAudioFormat = new AudioFormat(
-                        originAudioFormat.getEncoding(), //TODO Тип кодирования
+                        originalAudioFormat.getEncoding(), //TODO Тип кодирования
                         /*
                         TODO
                          Частота дискретизации.
-                         Частота дискретизации для звука - это то же самое,
-                         что частота кадров для видео.
-                         Сколько отдельных измерений в секунду.
+                         Частота дискретизации для звука -
+                         тоже самое, что частота кадров для видео.
+                         Сколько отдельных измерений в секундщу.
                          Меняем частоту:
                          было 44_100, стало 22_050.
                          Для стерео звука одно измерение -
                          это одно число для левого уха +
                          одно число для правого уха
                          */
-
-
-                        originAudioFormat.getSampleRate() / 2,
-                        originAudioFormat.getSampleSizeInBits(), //TODO Разрядность(бит на симпл)
-                        originAudioFormat.getChannels(), //TODO Кол-во каналов
-                        originAudioFormat.getFrameSize(), //TODO Размер фрейма в байтах
+                        originalAudioFormat.getSampleRate() / 2,
+                        originalAudioFormat.getSampleSizeInBits(), //TODO Разрядность(бит на симпл)
+                        originalAudioFormat.getChannels(), //TODO Кол-во каналов
+                        /*
+                        TODO
+                         Размер фрейма
+                         (совокупность сэмплов за 1 секунду)
+                         в байтах
+                         */
+                        originalAudioFormat.getFrameSize(),
                         /*
                         TODO
                          Частота фреймов.
-                         Меняем кол-во измерений в секунду: тоже в 2 раза меньше.
-                         Это сколько наборов измерений в секунду.
+                         Меняем кол-во измерений в секунду:
+                         тоже в 2 раза меньше.
+                         Это сколько наборов измерений в секунду
                          */
-                        originAudioFormat.getFrameRate() / 2,
-                        originAudioFormat.isBigEndian() //TODO Порядок байтов
+                        originalAudioFormat.getFrameRate() / 2,
+                        originalAudioFormat.isBigEndian() //TODO Порядок байтов
                 );
 
                 /*
                 TODO
-                 newAudioInputStream - что сохраняем в конечном виде.
-                 Преобразование(прореживание сэмплов).
-                 Читает оригинальные сэмплы.;
-                 Отбрасывает каждый второй(прореживание);
-                 Создаёт новый поток с изменённым форматом.
-                 //Оригинальные сэмплы(каждый)
-                 for (int i = 0; i < originSamples.length; i++) {
-                        newSamples[i] = originSamples[i];
-                 }
-                 //Уменьшённая частота(каждый второй)
-                 for (int i = 0; i < originSamples.length; i++) {
-                        newSamples[i] = originSamples[i * 2]; //берём с шагом 2
-                 }
+                  newAudioInputStream - что мы сохраняем в конечном виде.\
+                  Преобразование(прореживание сэмплов).
+                  Чтение оригинальных сэмплов;
+                  Отбрасывание каждого второго(прореживние);
+                  Создание нового потока с изменённым форматом
+                  //Уменьшённая частота(каждый второй сэмпл)
+                  for (int i = 0; i < originalSamples.length; i++) {
+                        newSamples[i] = originalSamples[i * 2]; //берём с шагом 2
+                  }
                  */
-                AudioInputStream newAudioInputStream = AudioSystem.getAudioInputStream(newAudioFormat, originAudioInputStream);
-
-                //TODO Куда сохранять
-                File newFileSound = new File(pathToDstFolder + "/" + currentFileSound.getName());
-                AudioSystem.write(newAudioInputStream, AudioFileFormat.Type.WAVE, newFileSound);
+                AudioInputStream newAudioInputStream = AudioSystem.getAudioInputStream(newAudioFormat, originalAudioInputStream);
+                //TODO Куда сохранять(путь, по кот-му происходит дальнейшее сохранение нового аудиофайла)
+                File newAudioFile = new File(pathToDstFolder + "/" + originalAudioFile.getName());
+                //TODO Само сохранение нового аудиофайла(newAudioInputStream) в формате WAVE по пути newAudioFile
+                AudioSystem.write(newAudioInputStream, AudioFileFormat.Type.WAVE, newAudioFile);
             }
-
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
